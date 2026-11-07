@@ -99,7 +99,7 @@ class Captioner:
 class MLXCaptioner(Captioner):
     """Qwen2.5-VL preko mlx-vlm (Apple Silicon)."""
 
-    def __init__(self, model_id: str = "mlx-community/Qwen2.5-VL-7B-Instruct-4bit"):
+    def __init__(self, model_id: str = "mlx-community/Qwen2.5-VL-3B-Instruct-4bit"):
         from mlx_vlm import load
         from mlx_vlm.utils import load_config
         self.model, self.processor = load(model_id)
@@ -112,7 +112,10 @@ class MLXCaptioner(Captioner):
         prompt = (
             "The image shows three crops (before, during, after) of a worker's hands in a first-person "
             "factory video. Describe the single manipulation step in the middle crop. Answer with ONE short "
-            f"phrase: '<verb> <object> [to/into/onto <destination>]'. Use one verb from: {', '.join(VERBS)}."
+            "lowercase phrase in the form '<verb> <object>' or '<verb> <object> to/into/onto <destination>'. "
+            "Add a destination only if a clear place or container is visible (a tray, box, table, fixture); "
+            "never use hands or a person as destination. Do not use brackets, quotes or punctuation. "
+            f"Use one verb from: {', '.join(VERBS)}."
         )
         formatted = apply_chat_template(self.processor, self.config, prompt, num_images=1)
         out = generate(self.model, self.processor, formatted, image=[str(collage)], max_tokens=24, verbose=False)

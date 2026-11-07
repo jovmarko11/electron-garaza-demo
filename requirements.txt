@@ -1,0 +1,7 @@
+opencv-contrib-python
+mediapipe>=0.10.14
+numpy
+pandas
+pyarrow
+plotly
+streamlit>=1.40

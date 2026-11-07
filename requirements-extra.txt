@@ -1,0 +1,4 @@
+# LeRobot v3 izvoz (povlaci torch; Python >= 3.12)
+lerobot[dataset]>=0.4
+# Jezicke labele lokalno na Apple Silicon (Qwen2.5-VL)
+mlx-vlm; sys_platform == "darwin"

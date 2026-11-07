@@ -1,0 +1,4 @@
+start_s,end_s,step,outcome,error_type
+0,6,pick bolt from tray,ok,
+6,12,insert bolt into frame,error,execution_error
+12,20,tighten bolt with screwdriver,recovery,

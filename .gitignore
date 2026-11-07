@@ -1,0 +1,11 @@
+runs/
+data/*.mp4
+data/*.mov
+models/*.task
+models/*.tflite
+__pycache__/
+.venv/
+
+factory_edge/
+.idea/
+.DS_Store

@@ -1,0 +1,46 @@
+start_s,end_s,step,outcome,error_type
+0.0,0.6,take objects,ok,
+0.7,4.9,check instruction,ok,
+4.8,6.8,align objects,ok,
+11.2,14.1,align objects,ok,
+12.7,13.7,take pin short,ok,
+13.7,15.4,plug short pin,ok,
+17.3,18.5,take tooth washer,ok,
+18.5,20.2,fit tooth washer,ok,
+20.2,21.2,take nut,ok,
+21.2,22.9,fit nut,ok,
+22.9,26.3,tighten nut,error,incorrectly installed rear rear chassis pin
+27.3,29.1,take pin short,error,incorrectly installed rear rear chassis pin
+30.3,31.6,take tooth washer,error,incorrectly installed rear rear chassis pin
+31.2,32.1,align objects,error,incorrectly installed rear rear chassis pin
+31.9,33.0,plug short pin,error,incorrectly installed rear rear chassis pin
+33.0,34.3,fit tooth washer,error,incorrectly installed rear rear chassis pin
+34.3,35.4,take nut,error,incorrectly installed rear rear chassis pin
+35.4,36.6,fit nut,error,incorrectly installed rear rear chassis pin
+40.4,40.8,take partial model,ok,
+40.8,42.1,put partial model,ok,
+43.5,44.8,take objects,ok,
+45.3,47.4,take objects,ok,
+49.1,50.6,take pin middle,ok,
+49.6,50.3,check instruction,ok,
+51.5,52.3,take round washer,ok,
+52.2,54.7,check instruction,ok,
+54.7,57.4,browse instruction,ok,
+58.0,58.7,align objects,ok,
+58.3,59.4,plug objects,ok,
+59.5,60.6,take pulley,ok,
+60.6,61.5,fit pulley,ok,
+61.3,63.1,plug objects,ok,
+61.5,62.2,align objects,ok,
+62.9,63.6,take round washer,ok,
+63.6,64.6,fit round washer,ok,
+64.4,65.1,take wheel,ok,
+65.1,66.0,fit wheel,ok,
+66.3,67.4,align objects,ok,
+67.7,69.4,take objects,ok,
+70.2,73.0,fit tooth washer,ok,
+73.2,74.9,take tooth washer,ok,
+74.9,76.0,fit tooth washer,ok,
+76.0,76.7,take nut,ok,
+76.7,77.4,fit nut,ok,
+77.4,80.0,tighten nut,ok,

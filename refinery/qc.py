@@ -10,12 +10,12 @@ import pandas as pd
 from .schema import SEGMENT_SECONDS, Segment
 
 GATES = [
-    ("integritet", "Integritet (dropovani / neuredni frejmovi)"),
-    ("ekspozicija", "Ekspozicija (crno / presvetlo / zeleni artefakt)"),
-    ("zamucenje", "Zamucenje"),
-    ("ruke", "Ruke nisu vidljive / odsecene"),
-    ("kamera", "Trzaj kamere"),
-    ("aktivnost", "Mirovanje (nista se ne desava)"),
+    ("integritet", "Integrity (dropped / out-of-order frames)"),
+    ("ekspozicija", "Exposure (black / overexposed / green artifact)"),
+    ("zamucenje", "Blur"),
+    ("ruke", "Hands not visible / truncated"),
+    ("kamera", "Camera shake"),
+    ("aktivnost", "Idle (no activity)"),
 ]
 GATE_LABELS = dict(GATES)
 
@@ -24,7 +24,7 @@ DEFAULT_CFG = {
     "max_bad_exposure_frac": 0.30,
     "blur_rel_to_median": 0.40,      # frejm je mutan ako je sharpness < 0.4 * medijana klipa
     "max_blur_frac": 0.40,
-    "min_hand_frac": 0.60,
+    "min_hand_frac": 0.40,
     "max_trunc_frac": 0.50,
     "max_jerk": 0.012,               # udeo sirine slike po frejmu (druga razlika globalnog toka)
     "min_activity": 0.02,            # brzina zgloba, udeo sirine slike u sekundi
@@ -106,7 +106,7 @@ def gate(df: pd.DataFrame, fps: float, W: int, cfg: dict | None = None) -> tuple
 
 def summarize(segments: list[Segment], cfg: dict) -> dict:
     total = sum(s.end_s - s.start_s for s in segments)
-    funnel = [{"kapija": "ulaz", "sekundi": total}]
+    funnel = [{"kapija": "input", "sekundi": total}]
     alive = list(segments)
     for g, label in GATES:
         alive = [s for s in alive if not s.qc_flags.get(g)]
@@ -125,7 +125,7 @@ def summarize(segments: list[Segment], cfg: dict) -> dict:
         "funnel": funnel,
         "rejected_seconds_by_reason": reasons,
         "config": cfg,
-        "method": "Automatske kapije = trijaza; granicni segmenti idu na rucnu proveru.",
+        "method": "Automatic gates = triage; borderline segments go to manual review.",
     }
 
 

@@ -21,7 +21,7 @@ Plan rada i checkpointi: `../PLAN_IZRADE.md`. Kada korisnik napiše "CPx", proč
 - Pre izmene koja dira više od jednog modula: kratak plan, pa čekaj potvrdu.
 - Posle izmene pokreni sintetički test (mora i dalje da prolazi: Upotrebljivo 60 %, 2 epizode), pa ciljani test za CP.
 - Ne briši `runs/` ni podatke u `data/` bez pitanja.
-- Komentari i UI tekstovi na srpskom (latinica). Labele podzadataka (jezik za kupca) na engleskom.
+- UI tekstovi (dashboard, nazivi QC kapija, overlay video, method/note u manifestu) su na engleskom. Komentari u kodu mogu ostati na srpskom (latinica). Labele podzadataka (jezik za kupca) na engleskom.
 - Poštene napomene ostaju u kodu: dubina zgloba je PROCENA, QC je trijaža + ručna odluka.
 
 ## Poznate zamke

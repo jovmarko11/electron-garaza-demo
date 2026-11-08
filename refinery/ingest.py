@@ -46,7 +46,7 @@ def pseudonymize(worker_id: str, vault: Path) -> str:
 def approx_intrinsics(width: int, height: int, hfov_deg: float) -> dict:
     fx = width / (2 * math.tan(math.radians(hfov_deg) / 2))
     return {"model": "pinhole_approx", "fx": fx, "fy": fx, "cx": width / 2, "cy": height / 2,
-            "hfov_deg": hfov_deg, "note": "Procena iz FOV-a; zameniti kalibracijom uredjaja."}
+            "hfov_deg": hfov_deg, "note": "Estimated from FOV; replace with device calibration."}
 
 
 def ingest(video: Path, run_dir: Path, worker_id: str, hfov_deg: float,

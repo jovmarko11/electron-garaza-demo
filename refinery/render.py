@@ -60,7 +60,7 @@ def render_overlay(anon_video: Path, df: pd.DataFrame, segments: list[Segment], 
             ok_seg = effective_pass(s)
             col = (60, 180, 60) if ok_seg else (40, 40, 220)
             cv2.rectangle(fr, (0, 0), (W, 34), col, -1)
-            txt = "QC OK" if ok_seg else f"ODBIJENO: {GATE_LABELS.get(s.qc_reason, s.qc_reason)}"
+            txt = "QC OK" if ok_seg else f"REJECTED: {GATE_LABELS.get(s.qc_reason, s.qc_reason)}"
             cv2.putText(fr, txt, (10, 24), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2, cv2.LINE_AA)
             if s.subtask:
                 lab = s.subtask + (f"  [{s.outcome}]" if s.outcome else "")

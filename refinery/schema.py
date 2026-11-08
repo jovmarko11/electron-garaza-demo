@@ -104,7 +104,7 @@ class ClipManifest:
         "works_council_approval": None,
         "commercial_use": None,
         "license": "TBD",
-        "note": "Za demo: javni skup (IndustReal, Apache-2.0) + snimak tima uz pristanak.",
+        "note": "For demo: public dataset (IndustReal, Apache-2.0) + team recording with consent.",
     })
 
 

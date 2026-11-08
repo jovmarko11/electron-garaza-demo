@@ -39,7 +39,7 @@ def export_canonical(run_dir: Path, df: pd.DataFrame, arrays: dict, episodes: li
         "observation.state": state_names(),
         "action.dexterous": action_dex_names(),
         "action.gripper": action_grip_names(),
-        "frames": "Pozicije zgloba su u koordinatama kamere (procena dubine), kp3d lokalno oko sake (m).",
+        "frames": "Wrist positions are in camera coordinates (depth is an ESTIMATE); kp3d is local around the hand (m).",
     }, indent=2))
     shutil.copy2(processed_video, out / "ego_anonymized.mp4")
     return out
@@ -51,9 +51,9 @@ def export_lerobot(run_dir: Path, anon_video: Path, arrays: dict, episodes: list
     try:
         from lerobot.datasets.lerobot_dataset import LeRobotDataset
     except Exception as e:  # noqa: BLE001
-        return {"status": "skipped", "reason": f"lerobot nije instaliran ({e.__class__.__name__})"}
+        return {"status": "skipped", "reason": f"lerobot not installed ({e.__class__.__name__})"}
     if not episodes:
-        return {"status": "skipped", "reason": "nema epizoda koje su prosle QC"}
+        return {"status": "skipped", "reason": "no episodes passed QC"}
     cap = cv2.VideoCapture(str(anon_video))
     W, H = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     w = width

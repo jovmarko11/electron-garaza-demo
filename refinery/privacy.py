@@ -4,7 +4,12 @@ Backendi za lica:
   - "mediapipe": MediaPipe FaceDetector (Apache-2.0), model blaze_face_short_range.tflite
   - "haar":      OpenCV Haar kaskada (ugradjena, radi offline, slabija)
   - "none":      iskljuceno (samo za testove)
-Produkcija: EgoBlur (Meta) — isti interfejs detect(frame_rgb) -> list[box].
+Produkcija: EgoBlur (Meta) — isti interfejs detect(frame, ts) -> list[(box, score)].
+
+Kalibracija (izmereno 2026-11-08 na ir_01 i tim_02):
+  lazna "lica" (sake, flase, delovi) imaju score 0.3–0.6; pravo lice >= 0.8.
+  -> "anchor" prag 0.75 (blur odmah), "support" prag 0.5 (blur SAMO blizu skorasnjeg anchor-a,
+     da uhvatimo lice koje ulazi/izlazi iz kadra ili je delimicno okrenuto).
 """
 from __future__ import annotations
 
@@ -14,12 +19,13 @@ import cv2
 import numpy as np
 
 Box = tuple[int, int, int, int]  # x, y, w, h u pikselima
+Det = tuple[Box, float]          # (box, score)
 
 
 class FaceDetector:
     name = "none"
 
-    def detect(self, frame_bgr: np.ndarray, ts_ms: int) -> list[Box]:
+    def detect(self, frame_bgr: np.ndarray, ts_ms: int) -> list[Det]:
         return []
 
 
@@ -30,19 +36,18 @@ class HaarFaces(FaceDetector):
         path = Path(cv2.data.haarcascades) / "haarcascade_frontalface_default.xml"
         self.clf = cv2.CascadeClassifier(str(path))
         if self.clf.empty():
-            raise FileNotFoundError(f"Haar kaskada nije nadjena ({path}). Koristi --faces mediapipe "
-                                    "ili opencv-python 4.x (sadrzi cv2/data/*.xml).")
+            raise FileNotFoundError(f"Haar kaskada nije nadjena ({path}). Koristi --faces mediapipe.")
 
     def detect(self, frame_bgr, ts_ms):
         gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
         found = self.clf.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(24, 24))
-        return [tuple(int(v) for v in b) for b in found]
+        return [(tuple(int(v) for v in b), 1.0) for b in found]
 
 
 class MediaPipeFaces(FaceDetector):
     name = "mediapipe-blazeface-short-range"
 
-    def __init__(self, model_path: Path, min_conf: float = 0.4):
+    def __init__(self, model_path: Path, min_conf: float = 0.5):
         import mediapipe as mp
         from mediapipe.tasks.python import BaseOptions, vision
         self.mp = mp
@@ -59,7 +64,8 @@ class MediaPipeFaces(FaceDetector):
         out = []
         for d in res.detections:
             bb = d.bounding_box
-            out.append((int(bb.origin_x), int(bb.origin_y), int(bb.width), int(bb.height)))
+            score = float(d.categories[0].score) if d.categories else 0.0
+            out.append(((int(bb.origin_x), int(bb.origin_y), int(bb.width), int(bb.height)), score))
         return out
 
 
@@ -74,15 +80,29 @@ def make_face_detector(kind: str, models_dir: Path) -> FaceDetector:
     return FaceDetector()
 
 
-class Anonymizer:
-    """Blur sa marginom i vremenskim 'drzanjem' (hold) da kratki promasaji detektora ne procure."""
+def _center(b: Box) -> np.ndarray:
+    x, y, w, h = b
+    return np.array([x + w / 2, y + h / 2])
 
-    def __init__(self, detector: FaceDetector, margin: float = 0.25, hold_frames: int = 5):
+
+class Anonymizer:
+    """Blur lica sa histerezom:
+    - anchor (score >= anchor_thr): blur odmah, pamti poziciju i vreme;
+    - support (support_thr <= score < anchor_thr): blur samo ako je unutar `window_ms` od anchor-a
+      i blizu njegove pozicije (lice se pomera, sake/predmeti nasumicno okidaju bilo gde);
+    - hold: poslednji blur ostaje jos `hold_frames` frejmova da kratki promasaj ne procuri.
+    """
+
+    def __init__(self, detector: FaceDetector, anchor_thr: float = 0.75, support_thr: float = 0.5,
+                 window_ms: int = 1000, near: float = 1.0, margin: float = 0.15, hold_frames: int = 5):
         self.det = detector
-        self.margin = margin
-        self.hold = hold_frames
-        self._recent: list[tuple[Box, int]] = []   # (box, preostalo frejmova)
-        self.stats = {"frames_with_faces": 0, "face_boxes": 0, "held_boxes": 0}
+        self.anchor_thr, self.support_thr = anchor_thr, support_thr
+        self.window_ms, self.near = window_ms, near
+        self.margin, self.hold = margin, hold_frames
+        self._recent: list[tuple[Box, int]] = []
+        self._anchor: tuple[Box, int] | None = None   # (box, ts_ms)
+        self.stats = {"frames_with_faces": 0, "face_boxes": 0, "held_boxes": 0,
+                      "rejected_low_score": 0, "anchor_thr": anchor_thr, "support_thr": support_thr}
 
     def _expand(self, b: Box, W: int, H: int) -> Box:
         x, y, w, h = b
@@ -91,15 +111,28 @@ class Anonymizer:
         x1, y1 = min(W, x + w + mx), min(H, y + h + my)
         return x0, y0, x1 - x0, y1 - y0
 
+    def _accept(self, box: Box, score: float, ts_ms: int) -> bool:
+        if score >= self.anchor_thr:
+            self._anchor = (box, ts_ms)
+            return True
+        if score >= self.support_thr and self._anchor is not None:
+            abox, ats = self._anchor
+            if ts_ms - ats <= self.window_ms:
+                dist = np.linalg.norm(_center(box) - _center(abox))
+                if dist <= self.near * max(abox[2], abox[3]):
+                    return True
+        self.stats["rejected_low_score"] += 1
+        return False
+
     def __call__(self, frame_bgr: np.ndarray, ts_ms: int) -> tuple[np.ndarray, int]:
         H, W = frame_bgr.shape[:2]
-        boxes = [self._expand(b, W, H) for b in self.det.detect(frame_bgr, ts_ms)]
+        boxes = [self._expand(b, W, H) for b, s in self.det.detect(frame_bgr, ts_ms) if self._accept(b, s, ts_ms)]
         if boxes:
             self.stats["frames_with_faces"] += 1
             self.stats["face_boxes"] += len(boxes)
         held = [(b, k - 1) for b, k in self._recent if k > 1]
         self.stats["held_boxes"] += len(held) if not boxes else 0
-        self._recent = [(b, self.hold) for b in boxes] + held
+        self._recent = [(b, self.hold) for b in boxes] + (held if not boxes else [])
         out = frame_bgr
         for (x, y, w, h), _ in self._recent:
             if w < 2 or h < 2:
